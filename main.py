@@ -10,10 +10,12 @@ import os
 # =======================
 
 variants = [
-    ("logo[whiteLtransB]", "white", None),
-    ("logo[blackLtransB]", "black", None),
-    ("logo[whiteLblackB]", "white", "black"),
-    ("logo[blackLwhiteB]", "black", "white"),
+    ("logo[whiteLtransB]", "white", None, None),
+    ("logo[blackLtransB]", "black", None, None),
+    ("logo[whiteLblackB]", "white", "black", "full"),
+    ("logo[blackLwhiteB]", "black", "white", "full"),
+    ("platelogo[whiteLblackB]", "white", "black", "squircle"),
+    ("platelogo[blackLwhiteB]", "black", "white", "squircle"),
 ]
 
 num_rays = 8
@@ -25,6 +27,10 @@ line_width = 8
 dpi = 600
 output_size = 6
 
+plate_offset = -2.2
+plate_size = 4.4
+rounding = 0.7
+
 def create_arc(width, depth, roundness):
     verts = [
         (-width/2, 0),
@@ -35,18 +41,35 @@ def create_arc(width, depth, roundness):
     codes = [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4]
     return Path(verts, codes)
 
-def generate_logo(base_filename, color, background):
+def generate_logo(base_filename, color, background, bg_type):
     fig, ax = plt.subplots(figsize=(output_size, output_size), dpi=dpi)
-    
-    if background:
-        fig.patch.set_facecolor(background)
-        ax.set_facecolor(background)
     
     ax.set_aspect('equal')
     ax.axis('off')
 
-    arc_path = create_arc(arc_width, arc_depth, roundness)
+    if bg_type == "full":
+        fig.patch.set_facecolor(background)
+        fig.patch.set_alpha(1.0)
+        ax.set_facecolor(background)
+        transparent = False
+    elif bg_type == "squircle":
+        fig.patch.set_alpha(0)
+        ax.set_facecolor((0,0,0,0))
+        box = patches.FancyBboxPatch(
+            (plate_offset, plate_offset), plate_size, plate_size,
+            boxstyle=f"round,pad=0,rounding_size={rounding}",
+            facecolor=background,
+            edgecolor='none',
+            zorder=0
+        )
+        ax.add_patch(box)
+        transparent = True
+    else:
+        fig.patch.set_alpha(0)
+        ax.set_facecolor((0,0,0,0))
+        transparent = True
 
+    arc_path = create_arc(arc_width, arc_depth, roundness)
     for i in range(num_rays):
         angle = 2 * np.pi * i / num_rays
         x = radius * np.cos(angle)
@@ -57,7 +80,8 @@ def generate_logo(base_filename, color, background):
             fill=False,
             lw=line_width,
             edgecolor=color,
-            capstyle='round'
+            capstyle='round',
+            zorder=1
         )
 
         transform = (
@@ -70,38 +94,32 @@ def generate_logo(base_filename, color, background):
         patch.set_transform(transform)
         ax.add_patch(patch)
 
-    ax.set_xlim(-2.5, 2.5)
-    ax.set_ylim(-2.5, 2.5)
+    ax.set_xlim(-2.7, 2.7)
+    ax.set_ylim(-2.7, 2.7)
 
-    plt.savefig(
-        f"{base_filename}.png",
-        dpi=dpi,
-        transparent=(background is None),
-        bbox_inches='tight',
-        pad_inches=0.1
-    )
-    
-    plt.savefig(
-        f"{base_filename}.svg",
-        transparent=(background is None),
-        bbox_inches='tight',
-        pad_inches=0.1
-    )
+    for ext in ['png', 'svg']:
+        plt.savefig(
+            f"{base_filename}.{ext}",
+            dpi=dpi,
+            transparent=transparent,
+            bbox_inches='tight',
+            pad_inches=0.1
+        )
     
     plt.close()
-    print(f"✅ Generated: {base_filename} (PNG & SVG)")
+    print(f"✅ Generated: {base_filename}")
 
 # =======================
-# RUN GENERATION
+# RUN
 # =======================
 
 if __name__ == "__main__":
-    os.makedirs("output_logos", exist_ok=True)
-    os.chdir("output_logos")
+    folder = "output_logos"
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    os.chdir(folder)
     
-    print("🚀 Starting Lumos Identity Generation...")
-    
-    for name, color, bg in variants:
-        generate_logo(name, color, bg)
-        
-    print("\n✨ All logos saved in 'output_logos' folder.")
+    print("🎨 Generating Lumos Logo Pack...")
+    for name, color, bg, bg_type in variants:
+        generate_logo(name, color, bg, bg_type)
+    print(f"\n✨ Done! All 6 variants are in '{folder}/'")
