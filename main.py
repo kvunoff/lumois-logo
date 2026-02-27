@@ -19,17 +19,18 @@ variants = [
 ]
 
 num_rays = 8
-radius = 1.5
-arc_width = 0.5
-arc_depth = 1
+radius = 2.25
+arc_width = 0.75
+arc_depth = 1.5
 roundness = 0
-line_width = 8
+line_width = 12
 dpi = 600
 output_size = 6
 
-plate_offset = -2.2
-plate_size = 4.4
-rounding = 0.7
+plate_offset = -2.64
+plate_size = 5.28
+rounding = 0.84
+
 
 def create_arc(width, depth, roundness):
     verts = [
